@@ -1,0 +1,209 @@
+\documentclass[a4paper]{article}
+
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[colorinlistoftodos]{todonotes}
+
+\title{Rapport TP 
+\\Optimisation - OMA}
+
+\author{Baptiste Doyen}
+
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Rapport du TP d'optimisation. 
+\end{abstract}
+
+\section{Séance 1 : optimisation continue et optimisation approchée}
+
+\subsection{Optimisation sans contrainte}
+
+\subsubsection{Méthode de gradient}
+
+\begin{enumerate}
+\item \textbf{Essai avec différentes valeurs de $\rho$}
+\vspace{0.1cm}
+\\ Certaines valeurs de $\rho$ assurent la convergence de la méthode du gradient. Empiriquement, il semble que pour les valeurs inférieures ou égales à $0.022$, la convergence est assurée tandis que pour les valeurs supérieures ou égales à $0.023$, il n'y a plus convergence.
+\item \textbf{Méthode du gradient avec choix adaptatif}
+\vspace{0.1cm}
+\\ À chaque itération on choisit un pas qui annule le terme d'ordre 2.
+\\ Calcul du pas :
+\end{enumerate}
+
+\subsubsection{Méthode de Quasi-Newton}
+
+\\ Il existait un autre moyen d'obtenir ce résultat : il s'agit de la méthode à pas optimal choisi précédemment. Ici la hessienne de $f_1$ se calcule simplement, on a donc pas besoin de l'approximer avec une méthode de Quasi-Newton.
+
+\subsection{Optimisation sous contraintes}
+
+Dans cette partie on suppose que $U \in \mathcal{U}_{ad} = [0;1]^5$.
+
+\subsubsection{Optimisation à l'aide de routines Matlab}
+
+On utilise ici l'algorithme SQP (Sequential Quadratic Programming).
+
+\newpage
+(i) Résultats pour $f_1$
+
+\begin{figure}[h!]
+\centering
+\includegraphics[scale=0.5]{sqp_f1.png}
+\caption{Résultats de l'algorithme SQP pour $f_1$}
+\label{fig:f1_results}
+\end{figure}
+\vspace{0.4cm}
+(ii) Résultats pour $f_2$
+\begin{figure}[h!]
+\centering
+\includegraphics[scale=0.5]{sqp_f2.png}
+\caption{Résultats de l'algorithme SQP pour $f_2$}
+\label{fig:f2_results}
+\end{figure}
+\vspace{0.2cm}
+\\ Commentaire : ici l'algorithme converge vers $0$, ce qui est bien la valeur du minimum que l'on aurait pu attendre pour $f_2$ compte tenu des contraintes. Afin de pouvoir réaliser des itérations ailleurs qu'au point nul, on a initialisé l'algorithme de convergence en un vecteur aléatoire. L'algorithme converge tout de même rapidement vers le vecteur nul.
+
+\subsubsection{Optimisation sous contraintes et pénalisation}
+
+\begin{enumerate}
+\item \textbf{Fonction de pénalisation}
+\vspace{0.1cm}
+Soit $U$ un vecteur de ${\rm I\!R}^N$.
+\\ On définit le vecteur $U^+$ par : 
+\[ \forall i \in [0,N], (U^+)_i = max(0,(U)_i) \]
+\\ De sorte que :  $||U^+||^2 = 0 \Longleftrightarrow{} \forall i \in [1;N], (U)_i \le 0$
+\vspace{0.2cm}
+\\ Soit $\beta : {\rm I\!R}^5 \rightarrow{} {\rm I\!R}$ la fonction définie par : 
+\[ \beta(U) = ||(-U)^+||^2 + ||(U-[\textbf{1}])^+||^2 \]
+où $[\textbf{1}] \in {\rm I\!R}^5$ désigne le vecteur colonne ne contenant que des $1$.
+\vspace{0.2cm}
+\\ Ainsi, $\beta(U) = 0 \Longleftrightarrow{} (-U)^+ = 0$ et $(U-[\textbf{1}])^+ = 0 \\ \Longleftrightarrow{} \forall i \in [0,N], -(U)_i \le 0$ et $(U)_i-1 \le 0 \Longleftrightarrow{} U \in \mathcal{U}_{ad}$.
+\vspace{0.2cm}
+\\ De plus, $\beta$ est continue et pour $ u \notin \mathcal{U}_{ad}, \beta(u) > 0$. Enfin, $f_1$ est continue, et coercive ($\underset{||u|| \rightarrow{} +\infty}{f_1(u) \rightarrow{}+\infty}$ car $U^TSU$ est quadratique en $U$ et domine donc $B^TU$ en l'infini). 
+\newpage
+Elle est donc inf-compacte (cas de la dimension finie) et est de plus bornée inférieurement (en effet elle est convexe - sa hessienne vaut $2A^TA \in S_n^+$  - sur $\mathcal{U}_{ad}$ convexe et admet un minimum local autour de $0$ qui est donc un minimum global par convexité). On peut donc légitimement appliquer la méthode de pénalisation pour $f_1$.
+\vspace{0.2cm}
+\\ On vérifie que c'est également le cas avec $f_2$ (elle est continue, coercive et bornée inférieurement car $x \mapsto xexp(x)$ l'est aussi et $U^TSU \ge 0$).
+\vspace{0.2cm}
+\\ (on remarque que $\beta$ définie plus haut est différentiable ($||U||^2 = U^T U$), ce qui sera utile dans la mise en oeuvre de cette méthode de pénalisation).
+
+
+\item \textbf{Mise en oeuvre de la méthode de pénalisation}
+\vspace{0.1cm}
+
+\end{enumerate}
+
+\subsubsection{Méthodes duales pour l'optimisation sous contraintes}
+
+
+\begin{enumerate}
+\item \textbf{Écriture du lagrangien}
+\vspace{0.1cm}
+\\ Soit $\mathcal{L}_{1}(U,\lambda)$ le lagrangien associé à la fonction $f_1$ et aux contraintes définissant $\mathcal{U}_{ad}$ : 
+\[ \mathcal{L}_{1}(U,\lambda) = f_1(U) + \sum_{i = 0}^{p} \lambda_i g_i(U) \]
+où : $p = 10$ et $g_i(U) = -u_i$ si $i \le 5$ et $g_i(U) = u_i-1$ sinon. 
+\vspace{0.1cm}
+\\ On vérifie l'existence d'un point selle pour le Lagrangien : 
+\vspace{0.1cm}
+\\ (i) $f_1$ et $(g_i)_i$ sont continûment différentiables
+\\ (ii) Les contraintes sont qualifiées : $\forall{} u \in \mathcal{U}_{ad}, \nabla g_i(u) = +/- e_i$ où $e_i$ désigne le $ième$ vecteur élémentaire de ${\rm I\!R}^p$
+\\ (iii) Le problème de minimisation sous contraintes admet une solution : $f_1$ est inf-compacte sur $\mathcal{U}_{ad}$ fermé.
+\vspace{0.2cm}
+\\ On peut donc légitimement appliquer l'algorithme d'Uzawa pour résoudre le problème d'optimisation sous-contraintes.
+\item \textbf{Mise en oeuvre de l'algorithme d'Uzawa}
+\vspace{0.1cm}
+\\ Ici l'espace dual $\Lambda$ est ${\rm I\!R}^p_+$, projeter un vecteur $v$ de l'espace sur $\Lambda$ revient donc à déterminer $v^+$.
+
+\end{enumerate}
+
+\subsection{Optimisation non-convexe - Recuit simulé}
+
+\begin{enumerate}
+\item \textbf{Fonction $f_3$}
+\vspace{0.1cm}
+\\ Soit $U \in {\rm I\!R}^5, f_3(U) := f_1(U) + 10*sin(2f_1(U))$.
+\\ On calcule $\nabla f_3(U) = \nabla f_1(U) + 20*\nabla f_1(U)*cos(2f_1(U)) $
+\item \textbf{Avec une méthode d'optimisation classique}
+\vspace{0.1cm}
+\\ On applique la méthode de descente de gradient avec $\rho$ constant.
+\item \textbf{Avec la méthode du Recuit simulé}
+\vspace{0.1cm}
+\end{enumerate}
+
+\newpage
+\subsection{Application : synthèse d'un filtre à réponse impulsionnelle finie}
+
+\begin{enumerate}
+\item \textbf{Optimisation sans contraintes}
+\vspace{0.1cm}
+\\ On choisit une méthode de discrétisation à pas constant et régulière par rapport aux deux intervalles : l'intervalle $[0,0.1]$ est subdivisé en $15$ sous -intervalles égaux et de même pour l'intervalle $[0.15,0.5]$
+\vspace{0.1cm}
+\\ Avec la méthode de Quasi-Newton : 
+\item \textbf{Optimisation sous contraintes}
+\vspace{0.1cm}
+\\ Sans contrainte le problème est le suivant : 
+\[ \underset{h \in {\rm I\!R}^{30}}{min} \underset{1 \le j \le 30}{max} |H_0(\nu_j) - H(\nu_j)|  \]
+\\ ce qui est équivalent à ce problème avec des contraintes d'inégalités :
+$$\begin{array}{ll}
+        \underset{t \in {\rm I\!R}_+, h \in {\rm I\!R}^{30}}{min} t \\
+        t \ge |H_0(\nu_j) - H(\nu_j)|  \; \; (1 \le j \le 30)
+\end{array}$$
+\\ Le problème formulé ainsi est alors un problème d'optimsation linéaire (la fonction objectif $t$ est linéaire en $t$) sous contraintes.
+
+\end{enumerate}
+\newpage
+\section{Séance 2 et 3 : optimisation discrète et optimisation multi-objectif}
+
+\subsection{Rangement d'objets (optimisation combinatoire)}
+
+\begin{enumerate}
+\item \textbf{Question préliminaire}
+\vspace{0.1cm}
+\\ Soit $i,j \in [|1;n|]$, puisque $x_{ij} = 0$ ou $x_{ij} = 1$, la boîte $i$ contient un objet et un seul ssi $\sum_{j = 1}^{n}x_{ij} = 1$ et l'objet $j$ contient un objet et un seul ssi $\sum_{i = 1}^{n}x_{ij} = 1$
+
+\item \textbf{PLNE}
+\vspace{0.1cm}
+\\ Soit $c \in {\rm I\!R}^{n^{2} \times 1}$ défini par $c_{ij} := ||O_j - B_i|| $ et $x := (x_{ij})_{ij}$
+\vspace{0.1cm}
+\\ La fonction coût liée au coût de déplacement est la somme totale des déplacements effectués pour ranger tous les objets dans toutes les boîtes. Comme la décision de ranger l'objet $j$ dans la boîte $i$ est encodée par la variable binaire $x_{ij}$, ce coût s'exprime par : 
+\[ \sum_{j = 1}^{n} \sum_{i = 1}^{n} x_{ij}||O_j - B_i|| = c^T x \]
+\vspace{0.2cm}
+\\ Pour les contraintes : il s'agit de contraintes d'égalité énoncées dans la question préliminaire et que l'on exprime par $Ax = b$ avec :
+\\ A = $\left (\begin{array}{c|c|c|c}
+A_1 & A_2 & ... & A_n \\
+\hline
+I_n & I_n & I_n & I_n \\
+\end{array}\right) \in {\rm I\!M}_{2n, n^{2}}$ 
+\\ où $A_i = e_i [\textbf{1}]^T \in {\rm I\!M}_{n, n}$ , $[\textbf{1}]^T = (1,1,...,1) $ et $ b = [\textbf{1}]$
+\vspace{0.2cm}
+\\ On en déduit ainsi la formulation du problème sous le format PLNE : 
+$$\begin{array}{ll}
+        \underset{x \in {\rm I\!R}^{n}}{min}  c^T x \\
+        Ax = b \\
+        x_{ij} \in \left\{ 0 ; 1\right\}   
+\end{array}$$
+\item \textbf{Ajout contrainte $1$ au PLNE}
+\vspace{0.1cm}
+\\La contrainte "\textit{l'objet 1 doit se situer dans la boîte située juste à gauche de la boîte contenant l'objet 2}" équivaut à "\textit{si la boîte $i$ contient l'objet 2, alors la boîte $i-1$ contient l'objet 1 et sinon, la boîte $i-1$ ne contient pas l'objet 1}". On obtient ainis la condition : 
+\[ x_{i-1,1} - x_{i,2} = 0 \;\; (2 \le i \le n)  \]
+\\ Il en résulte l'ajout d'une contrainte d'inégalité au PLNE précédent.
+\item \textbf{Ajout contrainte $2$ au PLNE}
+\vspace{0.1cm}
+\\ On raisonne par contraposée :  Ainsi, $\exists i_0, \exists k_0, x_{i_0,3} = 1$ et $x_{i_0 + k_0,4} = 1$
+\\ équivalent à dire que "\textit{l'objet 4 se situe à droite de l'objet 3}" $ssi$ "\textit{l'objet 3 se situe à gauche de l'objet 4}" $ssi$ \textbf{non}("\textit{l'objet 3 se situe à droite de l'objet 4}"). 
+\\ Ce qui démontre l'équivalence des deux propositions contraires.
+\newpage
+\item \textbf{Ajout contrainte $3$ au PLNE}
+\vspace{0.1cm}
+
+\item \textbf{Optimalité de la solution}
+\vspace{0.1cm}
+
+\end{enumerate}
+
+\end{document}
